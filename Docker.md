@@ -132,3 +132,86 @@ RUN apk add --update redis
 CMD ["redis-server"]
 ```
 
+Run `docker build .` to build a image in the base directory.
+
+**Workflow behind docker build:**
+
+1. `FROM alpine`: pulls an `alpine` image
+2. `RUN apk add --update redis`:
+- creates a temporary container out of the image pulled from last step;
+- executes the command inside the temporary container; 
+- takes the file system of the temporary container and saves it as a fs snapshot of the image;
+- removes the temporary container once the job above is done.
+3. `CMD ["redis-server"]`: Sets the primary cmd of the built image as `redis-server`
+
+![[Screenshot 2023-05-02 at 18.57.25.png]]
+
+## Tag a docker image
+```shell
+docker build -t ${docker_id}/${image_name}:${version} ${context}
+# example:
+docker build -t izzy1647/redis-server:0.0.1 .
+docker build -t izzy1647/redis-server:latest .
+```
+
+
+
+## Project: a web application in Docker
+1. Create a simple node app
+`package.json`:
+```json
+{
+	"dependencies": {
+		"express": "*"
+	},
+    "scripts": {
+	    "start": "node index.js"
+	}
+}
+```
+
+`index.js`:
+```javascript
+const express = require("express");
+
+const app = express();
+
+app.get("/", (req, res) => {
+	res.send("hi there");
+})
+
+app.listen(8080, () => {
+	console.log("Listening on port 8080");
+});
+```
+
+2. Build a docker image out of it
+`Dockerfile`:
+```dockerfile
+# Specify a base image
+FROM node:alpine
+
+WORKDIR /usr/app
+
+COPY ./ /usr/app
+
+RUN npm install
+
+# Set up a default command
+CMD [ "npm","start" ]
+```
+
+- `WORKDIR` command sets a work directory in the container
+- `COPY` copies files from local working directory into the container
+
+In terminal run `docker build -t izzy1647/simpleweb .`
+
+3. Init a container out of the image and start it
+```shell
+docker run -p 8080:8080 izzy1647/simpleweb
+```
+
+An important thing: PORT MAPPING. Use **-p** flag to do it
+
+![[Screenshot 2023-05-03 at 17.12.51.png]]
+
